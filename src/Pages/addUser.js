@@ -9,7 +9,7 @@ import ArrowForwardIcon from '@mui/icons-material/ArrowForward';
 import SendIcon from '@mui/icons-material/Send';
 import { useParams } from 'react-router-dom';
 import HttpService from "../httpservice";
-
+import { io } from 'socket.io-client';
 
 const AddUser = () => {
     const { groupId } = useParams();
@@ -17,56 +17,74 @@ const AddUser = () => {
     const [chatMessage, setChatMessage] = useState([]);
     const [newMessage, setNewMessage] = useState("");
     const messagesEndRef = useRef(null);
-    console.log(groupId,"this is prips")
+    const [storeId,setStoreId] = useState(null)
+    const socketRef = useRef(null);
 
-    // Function to hanlde change in new message
+    // Function to handle change in new message
     const newMessageChangeHandler = (event) => {
         setNewMessage(event.target.value);
     }
 
-    // Function send new message to chat
-    const sendMessageHandler = () => {
-        const tempArray = [...chatMessage];
-        tempArray.push(newMessage);
-        setChatMessage(tempArray);
-        setNewMessage("");
-    }
-
-    useEffect(() => {
-        scrollToBottom();
-    }, [chatMessage]);
-
-    useEffect(()=>{
-        getGroupWiseMessage()
-    },[groupId])
-
-    const getGroupWiseMessage = async() =>{
-        console.log(groupId,"this is the g roup id")
-        let res = await HttpService.getGroupWiseMessage(groupId);
-        console.log(res.data,"this isthe messagwfe")
-        setChatMessage(res.data)
-        console.log(res,"this is the res is clled")
-    }
-
-
-
+    // Function to scroll to the bottom of the chat
     const scrollToBottom = () => {
         messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
     }
 
-    const handleCall  = async() =>{
-        try{
-        let obj={
-            sender :"662961b154134021c63cf41e",
-            text : newMessage,
-            groupId : groupId
+    // Function to initialize socket connection
+    const initializeSocket = () => {
+        // Check if socketRef.current is already initialized
+        if (socketRef.current) {
+            return;
         }
-        let res = await HttpService.chatMessage(obj);
-    }catch(error){
-        console.log(error)
+    
+        socketRef.current = io('http://localhost:5003');
+    
+        socketRef.current.on('message', (message, id) => {
+            setStoreId(socketRef.current.id);
+            console.log(id, "this is message");
+    
+            setChatMessage(prevMessages => [...prevMessages, { id, text: message }]);
+        });
     }
+    
+
+    // Load group-wise messages on component mount and when groupId changes
+    useEffect(() => {
+        initializeSocket(); // Initialize socket connection
+    }, []); // Reload messages when groupId changes
+
+    useEffect(() => {
+        getGroupWiseMessage(); // Initialize socket connection
+    }, [groupId]); // Reload messages when groupId changes
+
+
+    // Function to get group-wise messages from the server
+    const getGroupWiseMessage = async () => {
+        let res = await HttpService.getGroupWiseMessage(groupId);
+        setChatMessage(res.data);
     }
-    console.log(chatMessage,"this is the chat message")
+
+    // Function to send new message to the server
+    const handleCall = async () => {
+        try {
+            let obj = {
+                sender: "662961b154134021c63cf41e",
+                text: newMessage,
+                groupId: groupId
+            }
+            let res = await HttpService.chatMessage(obj);
+            setNewMessage(""); // Clear input field after sending message
+            socketRef.current.emit('message', newMessage); // Emit new message to WebSocket
+        } catch (error) {
+            console.log(error)
+        }
+    }
+
+    // Scroll to bottom when chat messages change
+    useEffect(() => {
+        scrollToBottom();
+    }, [chatMessage]);
+
     return (
         <div style={{marginTop:"4rem"}}>
             <div style={{ height: "calc(100vh - 100px)", overflowY: "auto", paddingBottom: "50px" }}>
@@ -89,16 +107,16 @@ const AddUser = () => {
                     return (
                         <div key={i} style={containerStyle}>
                             <div style={messageStyle}>
-                                <p style={{ margin: 0 }}>{el.text}</p>
-                            </div>
+                            <p style={{ margin: 0 }}>{el.text}</p>
                         </div>
+                    </div>
                     );
                 })}
                 <div ref={messagesEndRef} />
             </div>
 
             <div style={{ position: "fixed", bottom: 0, left: 249, right: 0, backgroundColor: "transparent", padding: "10px" }}>
-                <form onSubmit={(e) => { e.preventDefault(); sendMessageHandler(); }} style={{ display: 'flex', alignItems: 'center' }}>
+                <form onSubmit={(e) => { e.preventDefault(); }} style={{ display: 'flex', alignItems: 'center' }}>
                     <FormControl fullWidth sx={{ m: 1, flexGrow: 1 }}>
                         <InputLabel htmlFor="outlined-adornment-amount">Text</InputLabel>
                         <OutlinedInput

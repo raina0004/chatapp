@@ -15,7 +15,7 @@ import InboxIcon from '@mui/icons-material/MoveToInbox';
 import { Link } from 'react-router-dom';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import AddUser from '../../Pages/addUser';
-import Group from '../../Pages/group'; // Import Group component
+import Group from '../../Pages/group'; // Import Group componentx
 import Button from '@mui/material/Button';
 import Dialog from '@mui/material/Dialog';
 import DialogActions from '@mui/material/DialogActions';
@@ -115,7 +115,6 @@ export default function PermanentDrawerLeft() {
         groupImage: formData.groupImage,
         selectedUsers: selectedUsers
       };
-      console.log(groupData, "this is the group data clicked");
 
       let response = await HttpService.creteGroup(groupData);
       getGroup();
