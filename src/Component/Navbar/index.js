@@ -26,11 +26,14 @@ import TextField from '@mui/material/TextField';
 import Checkbox from '@mui/material/Checkbox';
 import HttpService from '../../httpservice';
 import io from 'socket.io-client';
+import { useSelector } from "react-redux";
 
 
 const drawerWidth = 240;
 
 export default function PermanentDrawerLeft() {
+  const { userDetails } = useSelector((state) => state.user);
+
   // State to hold group names
   const [user, setNames] = useState([]);
   const [groupNames, setGroupNames] = useState([]);
@@ -40,6 +43,9 @@ export default function PermanentDrawerLeft() {
   const [selectedGroupName,setSelectedGroupName] = useState('')
   const [selectedUsers, setSelectedUsers] = useState([]);
   const [userGroups, setUserGroups] = useState([]);
+
+
+  console.log(userDetails)
 
   // State to hold form data for creating a group
   const [formData, setFormData] = useState({
@@ -71,9 +77,9 @@ export default function PermanentDrawerLeft() {
   const getGroup = async () => {
     try {
       const group = await HttpService.groupName();
-      let call = group;
-      console.log(call, "this is called");
-      setGroupNames(call.data);
+      const userGroupIds = userDetails.groups; // Array containing group IDs stored in userDetails.groups
+      const filteredGroups = group.data.filter(groupItem => userGroupIds.includes(groupItem._id));
+      setGroupNames(filteredGroups);
     } catch (error) {
       console.log(error, "this is the error");
     }

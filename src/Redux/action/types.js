@@ -1,0 +1,6 @@
+export const SET_LOADING = "SET_LOADING"
+export const SET_SNACK = "SET_SNACK"
+export const SET_SNACK_INFO = "SET_SNACK_INFO"
+export const SET_LOGIN_SUCCESS = 'SET_LOGIN_SUCCESS'
+export const SET_LOGOUT = 'SET_LOGOUT'
+export const SET_USER_DETAILS ='SET_USER_DETAILS'

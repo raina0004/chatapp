@@ -7,6 +7,10 @@ const HttpService = {
         console.log("coming")
         return axios.post(`${chat}/register`, data);
     },
+    login: function (data) {
+        console.log("coming")
+        return axios.post(`${chat}/login`, data);
+    },
     getUser: function (data) {
         console.log("coming")
         return axios.get(`${chat}/getAllUser`, data);

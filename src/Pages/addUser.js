@@ -9,10 +9,13 @@ import ArrowForwardIcon from '@mui/icons-material/ArrowForward';
 import SendIcon from '@mui/icons-material/Send';
 import { useParams } from 'react-router-dom';
 import HttpService from "../httpservice";
-import { io } from 'socket.io-client';
+import { io, Socket } from 'socket.io-client';
+import { useSelector } from "react-redux";
+
 
 const AddUser = () => {
     const { groupId } = useParams();
+    const { userDetails } = useSelector((state) => state.user);
 
     const [chatMessage, setChatMessage] = useState([]);
     const [newMessage, setNewMessage] = useState("");
@@ -36,16 +39,21 @@ const AddUser = () => {
         if (socketRef.current) {
             return;
         }
+        console.log("coming inside")
     
         socketRef.current = io('http://localhost:5003');
     
-        socketRef.current.on('message', (message, id) => {
-            setStoreId(socketRef.current.id);
-            console.log(id, "this is message");
-    
-            setChatMessage(prevMessages => [...prevMessages, { id, text: message }]);
+        socketRef.current.on('message', ({ messages, senderId }) => {
+            console.log(messages,"this is the messge")
+
+            console.log(senderId, "this is the sender ID");
+        
+            // Update chatMessage state with the received message and sender ID
+            setChatMessage(prevMessages => [...prevMessages, { text: messages, sender: senderId }]);
         });
-    }
+        
+    };
+    
     
 
     // Load group-wise messages on component mount and when groupId changes
@@ -68,17 +76,21 @@ const AddUser = () => {
     const handleCall = async () => {
         try {
             let obj = {
-                sender: "662961b154134021c63cf41e",
-                text: newMessage,
+                sender: userDetails.id,
+                text: newMessage, // Send the actual new message content
                 groupId: groupId
             }
             let res = await HttpService.chatMessage(obj);
             setNewMessage(""); // Clear input field after sending message
-            socketRef.current.emit('message', newMessage); // Emit new message to WebSocket
+            // Emit new message to WebSocket with sender ID
+            socketRef.current.emit('message', { messages: newMessage, senderId: userDetails.id });
         } catch (error) {
             console.log(error)
         }
     }
+    
+    console.log(chatMessage,"this is chat me")
+    
 
     // Scroll to bottom when chat messages change
     useEffect(() => {
@@ -88,30 +100,28 @@ const AddUser = () => {
     return (
         <div style={{marginTop:"4rem"}}>
             <div style={{ height: "calc(100vh - 100px)", overflowY: "auto", paddingBottom: "50px" }}>
-                {chatMessage && chatMessage?.map((el, i) => {
-                    const isEven = i % 2 === 0;
-                    const messageStyle = {
-                        background: isEven ? "grey" : "lightgreen",
-                        color: isEven ? "white" : "black",
-                        textAlign: isEven ? "left" : "right",
-                        borderRadius: "10px", // Optional: Adds rounded corners to the message bubbles
-                        maxWidth: "70%", // Optional: Limits the width of the message bubbles
-                        alignSelf: isEven ? "flex-start" : "flex-end", // Aligns the messages to the left or right
-                        marginBottom: "5px", // Adds spacing between messages
-                        padding: "8px 12px", // Adds padding inside the message bubbles
-                    };
-                    const containerStyle = {
-                        display: "flex",
-                        justifyContent: isEven ? "flex-start" : "flex-end",
-                    };
-                    return (
-                        <div key={i} style={containerStyle}>
-                            <div style={messageStyle}>
-                            <p style={{ margin: 0 }}>{el.text}</p>
-                        </div>
-                    </div>
-                    );
-                })}
+            {chatMessage && chatMessage.map((el, i) => {
+    const isSender = el.sender === userDetails.id; // Check if the sender ID matches the current user's ID
+    const messageStyle = {
+        background: isSender ? "lightgreen" : "grey",
+        color: isSender ? "black" : "white",
+        textAlign: isSender ? "right" : "left",
+        borderRadius: "10px",
+        maxWidth: "70%",
+        alignSelf: isSender ? "flex-end" : "flex-start",
+        marginBottom: "5px",
+        padding: "8px 12px",
+    };
+    return (
+        <div key={i} style={{ display: "flex", justifyContent: isSender ? "flex-end" : "flex-start" }}>
+            <div style={messageStyle}>
+                <p style={{ margin: 0 }}>{el.text}</p>
+            </div>
+        </div>
+    );
+})}
+
+
                 <div ref={messagesEndRef} />
             </div>
 

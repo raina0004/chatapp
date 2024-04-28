@@ -6,7 +6,7 @@ import AddUser from './Pages/addUser';
 import Register from './Pages/register';
 
 function App() {
-  let data =  localStorage.getItem('name');
+  let data =  localStorage.getItem('token');
 
   return (
     <Router>
